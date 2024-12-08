@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head><title>Add Items to Order</title></head>
+<body>
+<h1>Add Items to Current Order</h1>
+<form method="POST">
+    <label for="mainCategory">Main Category:</label>
+    <select name="mainCategory" required>
+        {% for c in categories %}
+        <option value="{{c.mainCategory}}">{{c.mainCategory}}</option>
+        {% endfor %}
+    </select><br>
+    <label for="subCategory">Sub Category:</label>
+    <select name="subCategory" required>
+        {% for c in categories %}
+        <option value="{{c.subCategory}}">{{c.subCategory}}</option>
+        {% endfor %}
+    </select><br>
+    <button type="submit" name="category_submit">Show Items</button>
+</form>
+
+{% if selected_category and selected_subcategory %}
+<h2>Available Items in {{selected_category}} - {{selected_subcategory}}</h2>
+<form method="POST">
+    <table border="1">
+        <tr><th>Select</th><th>ItemID</th><th>Description</th><th>CopyID</th></tr>
+        {% for i in items %}
+        <tr>
+            <td><input type="radio" name="itemID" value="{{i.ItemID}}" required>
+                <input type="hidden" name="copyID" value="{{i.copyID}}">
+            </td>
+            <td>{{i.ItemID}}</td>
+            <td>{{i.iDescription}}</td>
+            <td>{{i.copyID}}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <button type="submit" name="add_item">Add Selected Item</button>
+</form>
+{% endif %}
+
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul>
+    {% for m in messages %}
+      <li>{{m}}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
+
+<a href="/home">Back to Home</a>
+</body>
+</html>

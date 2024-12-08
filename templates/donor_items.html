@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head><title>Donor Items</title></head>
+<body class="container">
+<h1>Items Donated by {{ donor }}</h1>
+{% if items and items|length > 0 %}
+<table>
+    <tr><th>Item ID</th><th>Description</th><th>Donate Date</th></tr>
+    {% for i in items %}
+    <tr>
+        <td>{{ i.ItemID }}</td>
+        <td>{{ i.iDescription }}</td>
+        <td>{{ i.donateDate }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>No items found for this donor.</p>
+{% endif %}
+<a href="/home">Back to Home</a>
+</body>
+</html>

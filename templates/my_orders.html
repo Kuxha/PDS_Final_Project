@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head><title>My Orders</title></head>
+<body>
+<h1>My Orders</h1>
+<table border="1">
+    <tr><th>OrderID</th><th>OrderDate</th><th>Notes</th><th>Supervisor</th><th>Client</th><th>Status</th><th>Delivery Date</th></tr>
+    {% for o in orders %}
+    <tr>
+        <td>{{o.orderID}}</td>
+        <td>{{o.orderDate}}</td>
+        <td>{{o.orderNotes}}</td>
+        <td>{{o.supervisor}}</td>
+        <td>{{o.client}}</td>
+        <td>{{o.status}}</td>
+        <td>{{o.deliveryDate}}</td>
+    </tr>
+    {% endfor %}
+</table>
+<a href="/home">Back to Home</a>
+</body>
+</html>

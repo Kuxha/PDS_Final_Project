@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Order Items</title>
+<style>
+table, th, td { border:1px solid black; border-collapse: collapse; }
+th, td { padding: 5px; }
+</style>
+</head>
+<body>
+<h1>Items in Order</h1>
+{% if items and items|length > 0 %}
+<table>
+    <tr><th>Item ID</th><th>Item Name</th><th>Location Description</th></tr>
+    {% for row in items %}
+    <tr>
+        <td>{{ row.ItemID }}</td>
+        <td>{{ row.itemName }}</td>
+        <td>{{ row.address }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>No items found for this order.</p>
+{% endif %}
+<a href="/home">Back to Home</a>
+</body>
+</html>

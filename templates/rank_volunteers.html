@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head><title>Rank Volunteers</title></head>
+<body>
+<h1>Volunteer Ranking (Last 30 days)</h1>
+<table border="1">
+    <tr><th>Volunteer Username</th><th>Delivered Count</th></tr>
+    {% for r in ranks %}
+    <tr>
+        <td>{{r.userName}}</td>
+        <td>{{r.delivered_count}}</td>
+    </tr>
+    {% endfor %}
+</table>
+<a href="/home">Back to Home</a>
+</body>
+</html>

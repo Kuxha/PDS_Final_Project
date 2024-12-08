@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head><title>Accept Donation</title></head>
+
+<body>
+<h1>Accept Donation</h1>
+<form action="/accept_donation" method="POST">
+    <label for="donorID">Donor Username:</label>
+    <input type="text" id="donorID" name="donorID" required><br>
+
+    <label for="itemName">Item Name (Description):</label>
+    <input type="text" id="itemName" name="itemName" required><br>
+
+    <label for="mainCategory">Main Category:</label>
+    <select name="mainCategory" id="mainCategory" required>
+        <option value="">--Select Main Category--</option>
+        {% set main_cats = categories|groupby('mainCategory') %}
+        {% for main_cat, items in main_cats %}
+        <option value="{{ main_cat }}">{{ main_cat }}</option>
+        {% endfor %}
+    </select><br>
+
+    <label for="subCategory">Sub Category:</label>
+    <select name="subCategory" id="subCategory" required>
+        <option value="">--Select Sub Category--</option>
+        {% for cat in categories %}
+        <option value="{{ cat.subCategory }}">{{ cat.subCategory }} ({{ cat.mainCategory }})</option>
+        {% endfor %}
+    </select><br><br>
+
+    <label for="location">Select Location:</label>
+    <select name="location" id="location" required>
+        <option value="">--Select a Location--</option>
+        {% for loc in locations %}
+        <option value="{{loc.roomNum}}_{{loc.shelfNum}}">
+            Room {{loc.roomNum}}, Shelf {{loc.shelfNum}} ({{loc.shelfDescription}})
+        </option>
+        {% endfor %}
+    </select><br><br>
+
+    <button type="submit">Accept Donation</button>
+</form>
+<a href="/home">Back to Home</a>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Item Locations</title>
+<style>
+table, th, td {
+    border:1px solid black;
+    border-collapse: collapse;
+}
+th, td {
+    padding: 5px;
+}
+</style>
+</head>
+<body>
+<h1>Item Locations</h1>
+{% if pieces %}
+<table>
+    <tr><th>Copy ID</th>
+        <th>Location Description</th></tr>
+    {% for piece in pieces %}
+    <tr>
+        <td>{{ piece.copyID }}</td>
+        <td>{{ piece.address }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>No pieces found for that ItemID.</p>
+{% endif %}
+<a href="/home">Back to Home</a>
+</body>
+</html>

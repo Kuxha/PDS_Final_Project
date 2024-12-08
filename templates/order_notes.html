@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head><title>Order Notes</title></head>
+<body class="container">
+<h1>Order Notes</h1>
+<form method="POST" action="/order_notes">
+    <label for="orderID">Order ID:</label>
+    <input type="number" name="orderID" required><br>
+    <label for="notes">Notes:</label>
+    <input type="text" name="notes" placeholder="Enter instructions or notes"><br>
+    <button type="submit">Save Notes</button>
+</form>
+<a href="/home">Back to Home</a>
+</body>
+</html>

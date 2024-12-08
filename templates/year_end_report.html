@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head><title>Year-End Report</title></head>
+<body>
+<h1>Year-End Report</h1>
+<p>Number of clients served: {{clients_served}}</p>
+<p>Total orders: {{total_orders}}</p>
+<h2>Items Donated by Category</h2>
+<table border="1">
+    <tr><th>Main Category</th><th>Sub Category</th><th>Count Items</th></tr>
+    {% for c in category_data %}
+    <tr>
+        <td>{{c.mainCategory}}</td>
+        <td>{{c.subCategory}}</td>
+        <td>{{c.count_items}}</td>
+    </tr>
+    {% endfor %}
+</table>
+<a href="/home">Back to Home</a>
+</body>
+</html>
