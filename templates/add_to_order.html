@@ -1,54 +1,59 @@
 <!DOCTYPE html>
 <html>
-<head><title>Add Items to Order</title></head>
+<head>
+    <title>Add to Current Order</title>
+</head>
 <body>
-<h1>Add Items to Current Order</h1>
-<form method="POST">
-    <label for="mainCategory">Main Category:</label>
-    <select name="mainCategory" required>
-        {% for c in categories %}
-        <option value="{{c.mainCategory}}">{{c.mainCategory}}</option>
-        {% endfor %}
-    </select><br>
-    <label for="subCategory">Sub Category:</label>
-    <select name="subCategory" required>
-        {% for c in categories %}
-        <option value="{{c.subCategory}}">{{c.subCategory}}</option>
-        {% endfor %}
-    </select><br>
-    <button type="submit" name="category_submit">Show Items</button>
-</form>
+    <h1>Add Items to Current Order</h1>
+    
+    <!-- Order Details Section -->
+    <h2>Order Details</h2>
+    <p><b>Order Date:</b> {{ order.orderDate }}</p>
+    <p><b>Order Notes:</b> {{ order.orderNotes }}</p>
+    <p><b>Supervisor:</b> {{ order.supervisor }}</p>
+    <p><b>Client:</b> {{ order.client }}</p>
 
-{% if selected_category and selected_subcategory %}
-<h2>Available Items in {{selected_category}} - {{selected_subcategory}}</h2>
-<form method="POST">
-    <table border="1">
-        <tr><th>Select</th><th>ItemID</th><th>Description</th><th>CopyID</th></tr>
-        {% for i in items %}
-        <tr>
-            <td><input type="radio" name="itemID" value="{{i.ItemID}}" required>
-                <input type="hidden" name="copyID" value="{{i.copyID}}">
-            </td>
-            <td>{{i.ItemID}}</td>
-            <td>{{i.iDescription}}</td>
-            <td>{{i.copyID}}</td>
-        </tr>
-        {% endfor %}
-    </table>
-    <button type="submit" name="add_item">Add Selected Item</button>
-</form>
-{% endif %}
+    <!-- Category Selection Form -->
+    <form method="POST">
+        <label for="mainCategory">Select Category:</label>
+        <select name="mainCategory" id="mainCategory">
+            {% for category in categories %}
+                <option value="{{ category.mainCategory }}">{{ category.mainCategory }}</option>
+            {% endfor %}
+        </select>
+        <label for="subCategory">Select Subcategory:</label>
+        <select name="subCategory" id="subCategory">
+            {% for category in categories %}
+                <option value="{{ category.subCategory }}">{{ category.subCategory }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" name="category_submit">Search</button>
+    </form>
 
-{% with messages = get_flashed_messages() %}
-  {% if messages %}
-    <ul>
-    {% for m in messages %}
-      <li>{{m}}</li>
-    {% endfor %}
-    </ul>
-  {% endif %}
-{% endwith %}
-
-<a href="/home">Back to Home</a>
+    <!-- Available Items Section -->
+    {% if items %}
+        <h2>Available Items</h2>
+        <form method="POST">
+            <table>
+                <tr>
+                    <th>Item ID</th>
+                    <th>Description</th>
+                    <th>Piece Number</th>
+                    <th>Select</th>
+                </tr>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.ItemID }}</td>
+                    <td>{{ item.iDescription }}</td>
+                    <td>{{ item.pieceNum }}</td>
+                    <td>
+                        <input type="radio" name="selected_item" value="{{ item.ItemID }}_{{ item.pieceNum }}">
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+            <button type="submit" name="add_item">Add to Order</button>
+        </form>
+    {% endif %}
 </body>
 </html>

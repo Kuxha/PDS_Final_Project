@@ -4,7 +4,6 @@ import os
 from datetime import date, datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 
-
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 
@@ -45,7 +44,6 @@ def register():
     cursor.close()
     return render_template('register.html', roles=roles)
 
-
 @app.route('/loginAuth', methods=['POST'])
 def loginAuth():
     username = request.form['username']
@@ -65,16 +63,12 @@ def loginAuth():
         session['is_staff'] = any(r['roleID'] == 'staff' for r in roles)
         session['is_volunteer'] = any(r['roleID'] == 'volunteer' for r in roles)
         
-        # Add other roles checks as needed
         cursor.close()
         return redirect(url_for('home'))
     else:
         cursor.close()
         error = 'Invalid login or password'
         return render_template('login.html', error=error)
-
-
-
 
 @app.route('/registerAuth', methods=['POST'])
 def registerAuth():
@@ -173,7 +167,7 @@ def start_order():
 ############################################################
 # 6. Add to Current Order
 ############################################################
-@app.route('/add_to_order', methods=['GET','POST'])
+@app.route('/add_to_order', methods=['GET', 'POST'])
 def add_to_order():
     if 'username' not in session or not session.get('is_staff'):
         return "Not authorized"
@@ -181,6 +175,11 @@ def add_to_order():
         return "No current order. Please start an order first."
 
     cursor = conn.cursor()
+    
+    # Fetch order details
+    cursor.execute("SELECT * FROM Ordered WHERE orderID = %s", (session['current_order'],))
+    order = cursor.fetchone()
+
     # Get list of categories/subcategories for the dropdown
     cursor.execute("SELECT DISTINCT mainCategory, subCategory FROM Category")
     categories = cursor.fetchall()
@@ -194,22 +193,22 @@ def add_to_order():
             selected_category = request.form['mainCategory']
             selected_subcategory = request.form['subCategory']
             query = """
-            SELECT i.ItemID, i.iDescription, p.copyID 
+            SELECT i.ItemID, i.iDescription, p.pieceNum 
             FROM Item i
             JOIN Piece p ON i.ItemID = p.ItemID
-            WHERE i.mainCategory=%s AND i.subCategory=%s
-            AND (i.ItemID, p.copyID) NOT IN (
-                SELECT ItemID, copyID FROM ItemIn
+            WHERE i.mainCategory = %s AND i.subCategory = %s
+            AND NOT EXISTS (
+                SELECT 1 FROM ItemIn ii WHERE ii.ItemID = p.ItemID AND ii.pieceNum = p.pieceNum
             )
             """
             cursor.execute(query, (selected_category, selected_subcategory))
             items = cursor.fetchall()
         elif 'add_item' in request.form:
-            itemID = request.form['itemID']
-            copyID = request.form['copyID']
+            selected_item = request.form['selected_item']
+            itemID, pieceNum = selected_item.split('_')
             orderID = session['current_order']
-            query = "INSERT INTO ItemIn (ItemID, copyID, orderID) VALUES (%s,%s,%s)"
-            cursor.execute(query, (itemID, copyID, orderID))
+            query = "INSERT INTO ItemIn (ItemID, pieceNum, orderID) VALUES (%s, %s, %s)"
+            cursor.execute(query, (itemID, pieceNum, orderID))
             conn.commit()
             flash("Item added to order")
     cursor.close()
@@ -218,12 +217,14 @@ def add_to_order():
                            categories=categories,
                            selected_category=selected_category,
                            selected_subcategory=selected_subcategory,
-                           items=items)
+                           items=items,
+                           order=order)
+
 
 ############################################################
 # 7. Prepare Order
 ############################################################
-@app.route('/prepare_order', methods=['GET','POST'])
+@app.route('/prepare_order', methods=['GET', 'POST'])
 def prepare_order():
     if 'username' not in session or not session.get('is_staff'):
         return "Not authorized"
@@ -244,9 +245,9 @@ def prepare_order():
 
         q = """
         UPDATE Piece p
-        JOIN ItemIn ii ON p.ItemID=ii.ItemID AND p.copyID=ii.copyID
-        SET p.roomNum=999, p.shelfNum=999
-        WHERE ii.orderID=%s
+        JOIN ItemIn ii ON p.ItemID = ii.ItemID AND p.pieceNum = ii.pieceNum
+        SET p.roomNum = 999, p.shelfNum = 999
+        WHERE ii.orderID = %s
         """
         cursor.execute(q, (orderID,))
         conn.commit()
@@ -385,19 +386,26 @@ def find_single_item():
     if request.method == 'POST':
         itemID = request.form['itemID']
         cursor = conn.cursor()
+
+  
         query = '''
-SELECT p.copyID, l.shelfDescription AS address
-FROM Piece p
-JOIN Location l ON p.roomNum = l.roomNum AND p.shelfNum = l.shelfNum
-WHERE p.ItemID = %s
+        SELECT p.pieceNum, l.shelfDescription AS address
+        FROM Piece p
+        JOIN Location l ON p.roomNum = l.roomNum AND p.shelfNum = l.shelfNum
+        WHERE p.ItemID = %s
         '''
         cursor.execute(query, (itemID,))
         pieces = cursor.fetchall()
         cursor.close()
-        return render_template('item_locations.html', pieces=pieces)
+        
+        # Render results or an appropriate message
+        if pieces:
+            return render_template('item_locations.html', pieces=pieces)
+        else:
+            return "No pieces found for the given item ID."
+    
     # If GET request, show the form
     return render_template('find_item.html')
-
 
 
 @app.route('/find_order_items', methods=['GET', 'POST'])
@@ -408,12 +416,11 @@ def find_order_items():
     if request.method == 'POST':
         orderID = request.form['orderID']
         cursor = conn.cursor()
-        # The query joins ItemIn, Piece, Item, and Location to find all items in the given order
-        # along with their storage locations.
+        # Updated query to match the schema changes
         query = """
-        SELECT i.ItemID, i.iDescription AS itemName, l.shelfDescription AS address
+        SELECT i.ItemID, i.iDescription AS itemName, l.shelfDescription AS address, p.pieceNum
         FROM ItemIn ii
-        JOIN Piece p ON ii.ItemID = p.ItemID AND ii.copyID = p.copyID
+        JOIN Piece p ON ii.ItemID = p.ItemID AND ii.pieceNum = p.pieceNum
         JOIN Item i ON p.ItemID = i.ItemID
         JOIN Location l ON p.roomNum = l.roomNum AND p.shelfNum = l.shelfNum
         WHERE ii.orderID = %s
@@ -421,13 +428,14 @@ def find_order_items():
         cursor.execute(query, (orderID,))
         items = cursor.fetchall()
         cursor.close()
-        # Render the results in order_items.html
         return render_template('order_items.html', items=items)
     else:
-        # If GET request, show the find_order.html form
         return render_template('find_order.html')
 
 
+
+# // Latest 
+@app.route('/accept_donation', methods=['GET', 'POST'])
 
 
 @app.route('/accept_donation', methods=['GET', 'POST'])
@@ -447,17 +455,12 @@ def accept_donation():
     if request.method == 'POST':
         donorID = request.form['donorID']
         itemName = request.form['itemName']
-
-        # Get selected category and subcategory from form
         selected_main_cat = request.form['mainCategory']
         selected_sub_cat = request.form['subCategory']
-
-        # Get selected location (as implemented previously)
         selected_location = request.form['location']
         roomNum, shelfNum = selected_location.split('_')
 
         cursor = conn.cursor()
-        # Check donor
         query = 'SELECT * FROM Person WHERE userName = %s'
         cursor.execute(query, (donorID,))
         donor = cursor.fetchone()
@@ -465,7 +468,6 @@ def accept_donation():
             cursor.close()
             return "Invalid Donor ID"
 
-        # Verify that the chosen category and subcategory exist
         verify_cat_query = "SELECT * FROM Category WHERE mainCategory=%s AND subCategory=%s"
         cursor.execute(verify_cat_query, (selected_main_cat, selected_sub_cat))
         cat_check = cursor.fetchone()
@@ -482,19 +484,18 @@ def accept_donation():
         ins_donated = 'INSERT INTO DonatedBy (ItemID, userName, donateDate) VALUES (%s,%s,%s)'
         cursor.execute(ins_donated, (itemID, donorID, date.today()))
 
-        copyID = 1
+        # Updated query for Piece
         ins_piece = '''
-        INSERT INTO Piece (ItemID, copyID, pDescription, length, width, height, roomNum, shelfNum)
+        INSERT INTO Piece (ItemID, pieceNum, pDescription, length, width, height, roomNum, shelfNum)
         VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
         '''
-        cursor.execute(ins_piece, (itemID, copyID, 'Item piece', 10, 10, 10, roomNum, shelfNum))
+        pieceNum = 1  # Default to single piece
+        cursor.execute(ins_piece, (itemID, pieceNum, 'Item piece', 10, 10, 10, roomNum, shelfNum))
 
         conn.commit()
         cursor.close()
         return "Donation Accepted"
-
-    # If GET request, render template with categories and locations
-    # We assume you already fetch `locations` as shown previously.
+    
     cursor = conn.cursor()
     loc_query = "SELECT roomNum, shelfNum, shelfDescription FROM Location"
     cursor.execute(loc_query)
@@ -502,94 +503,6 @@ def accept_donation():
     cursor.close()
 
     return render_template('accept_donation.html', categories=categories, locations=locations)
-
-@app.route('/manage_items', methods=['GET', 'POST'])
-def manage_items():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    if not session.get('is_staff', False):
-        return "Not authorized"
-
-    cursor = conn.cursor()
-    if request.method == 'POST':
-        itemID = request.form['itemID']
-        # Mark item as unavailable
-        query = "UPDATE Item SET isAvailable=FALSE WHERE ItemID=%s"
-        cursor.execute(query, (itemID,))
-        conn.commit()
-    
-    # Show available items
-    q = "SELECT ItemID, iDescription FROM Item WHERE isAvailable=TRUE"
-    cursor.execute(q)
-    items = cursor.fetchall()
-    cursor.close()
-    return render_template('manage_items.html', items=items)
-
-
-@app.route('/order_notes', methods=['GET', 'POST'])
-def order_notes():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    if not session.get('is_staff', False):
-        return "Not authorized"
-    
-    if request.method == 'POST':
-        orderID = request.form['orderID']
-        notes = request.form['notes']
-        cursor = conn.cursor()
-        q = "UPDATE Ordered SET notes=%s WHERE orderID=%s"
-        cursor.execute(q, (notes, orderID))
-        conn.commit()
-        cursor.close()
-        return "Notes updated."
-    
-    # GET request: show a form to enter order ID and notes
-    return render_template('order_notes.html')
-
-
-
-@app.route('/search_by_donor', methods=['GET', 'POST'])
-def search_by_donor():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    # Both staff and volunteers could potentially use this
-
-    if request.method == 'POST':
-        donorID = request.form['donorID']
-        cursor = conn.cursor()
-        q = """
-        SELECT i.ItemID, i.iDescription, db.donateDate
-        FROM DonatedBy db
-        JOIN Item i ON db.ItemID = i.ItemID
-        WHERE db.userName=%s
-        """
-        cursor.execute(q, (donorID,))
-        items = cursor.fetchall()
-        cursor.close()
-        return render_template('donor_items.html', items=items, donor=donorID)
-    return render_template('search_by_donor.html')
-
-
-
-@app.route('/category_summary')
-def category_summary():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    # Anyone can view this summary, or restrict to staff only if desired.
-
-    cursor = conn.cursor()
-    q = """
-    SELECT i.mainCategory, i.subCategory, COUNT(*) as total
-    FROM Item i
-    WHERE i.isAvailable=TRUE
-    GROUP BY i.mainCategory, i.subCategory
-    ORDER BY total DESC
-    """
-    cursor.execute(q)
-    summary = cursor.fetchall()
-    cursor.close()
-    return render_template('category_summary.html', summary=summary)
-
 
 if __name__ == "__main__":
     app.run('127.0.0.1', 5000, debug=True)

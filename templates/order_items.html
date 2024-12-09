@@ -1,27 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Order Items</title>
-<style>
-table, th, td { border:1px solid black; border-collapse: collapse; }
-th, td { padding: 5px; }
-</style>
+    <title>Order Items</title>
+    <style>
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 5px;
+        }
+    </style>
 </head>
 <body>
-<h1>Items in Order</h1>
-{% if items and items|length > 0 %}
+<h1>Order Items</h1>
+{% if items %}
 <table>
-    <tr><th>Item ID</th><th>Item Name</th><th>Location Description</th></tr>
-    {% for row in items %}
     <tr>
-        <td>{{ row.ItemID }}</td>
-        <td>{{ row.itemName }}</td>
-        <td>{{ row.address }}</td>
+        <th>Item ID</th>
+        <th>Item Name</th>
+        <th>Piece Number</th>
+        <th>Location Description</th>
+    </tr>
+    {% for item in items %}
+    <tr>
+        <td>{{ item.ItemID }}</td>
+        <td>{{ item.itemName }}</td>
+        <td>{{ item.pieceNum }}</td>
+        <td>{{ item.address }}</td>
     </tr>
     {% endfor %}
 </table>
 {% else %}
-<p>No items found for this order.</p>
+<p>No items found for that Order ID.</p>
 {% endif %}
 <a href="/home">Back to Home</a>
 </body>
